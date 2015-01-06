@@ -38,6 +38,7 @@ namespace hashtopus
         static extern bool FreeLibrary(IntPtr hModule);
 
         public static bool debug = false;
+        public static bool download = true;
 
         public static string htpver = "0.9.1";
         public static char separator = '\x01';
@@ -73,6 +74,10 @@ namespace hashtopus
         public static string token;
         public static string tokenName = "hashtopus.token";
         public static string tokenFile;
+    
+        public static string voucher;
+        public static string voucherName = "hashtopus.voucher";
+        public static string voucherFile;
 
         public static string hcDir = "";
         public static string tasksDir = "";
@@ -141,7 +146,9 @@ namespace hashtopus
             installPath = AppDomain.CurrentDomain.BaseDirectory;
             Directory.SetCurrentDirectory(installPath);
             tokenFile = Path.Combine(installPath, tokenName);
+            voucherFile = Path.Combine(installPath, voucherName);
             
+
             if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 // linux
@@ -160,6 +167,12 @@ namespace hashtopus
             {
                 Console.WriteLine("Debug mode on.");
                 debug = true;
+            }
+
+            if (Array.IndexOf(arguments, "nodownload") > -1)
+            {
+                Console.WriteLine("Downloading hashcat from server disabled.");
+                download = false;
             }
 
             if (Array.IndexOf(arguments, "eventmode") > -1) eventmode = true;
@@ -505,9 +518,14 @@ namespace hashtopus
             parametry.Add("os", os.ToString());
             
             // request voucher from user
-            Console.Write("Enter registration voucher: ");
-            string voucher = Console.ReadLine();
-            
+        if (readVoucher()) {
+        Console.Write("Voucher from file. ");
+        }
+        else {            
+        Console.Write("Enter registration voucher: ");
+        voucher = Console.ReadLine();
+        }
+        
             parametry.Add("voucher", voucher);
             string[] responze = new string[] { };
             // send them and receive the token
@@ -582,12 +600,32 @@ namespace hashtopus
             {
                 if (registerAgent())
                 {
+                    if (readVoucher()) 
+                    {
+                        File.Delete(voucherFile);
+                    }     
                     return loginAgent();
                 }
                 else
                 {
                     return false;
                 }
+            }
+        }
+
+    public static bool readVoucher()
+        {
+            // read voucher from text file
+            if (File.Exists(voucherFile))
+            {
+                // save it into variable
+                voucher = File.ReadAllText(voucherFile);
+                return true;
+            }
+            else
+            {
+                // or return false if there is none
+                return false;
             }
         }
 
@@ -606,7 +644,7 @@ namespace hashtopus
                 return false;
             }
         }
-        
+            
         public static bool writeToken()
         {
             // write the token to disk
@@ -967,6 +1005,7 @@ namespace hashtopus
                 webError(e);
                 return false;
             }
+    if(download) {
             switch (responze[0])
             {
                 case "down_ok":
@@ -1061,6 +1100,9 @@ namespace hashtopus
                     cmdExecutable = Path.Combine(hcDir, responze[1]);
                     break;
             }
+} else {
+                    cmdExecutable = Path.Combine(hcDir, responze[1]);
+}
             return true;
         }
 

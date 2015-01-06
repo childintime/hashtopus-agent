@@ -1,5 +1,4 @@
-# hashtopus-agent
-
+# hashtopus-agent - do not use, not finished yet
 
 Agent part of Hashtopus
 
