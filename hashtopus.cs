@@ -74,7 +74,7 @@ namespace hashtopus
         public static string token;
         public static string tokenName = "hashtopus.token";
         public static string tokenFile;
-    
+
         public static string voucher;
         public static string voucherName = "hashtopus.voucher";
         public static string voucherFile;
@@ -518,14 +518,16 @@ namespace hashtopus
             parametry.Add("os", os.ToString());
             
             // request voucher from user
-        if (readVoucher()) {
-        Console.Write("Voucher from file. ");
-        }
-        else {            
-        Console.Write("Enter registration voucher: ");
-        voucher = Console.ReadLine();
-        }
-        
+            if (readVoucher()) 
+            {
+                Console.Write("Voucher from file. ");
+            }
+            else 
+            {
+                Console.Write("Enter registration voucher: ");
+                voucher = Console.ReadLine();
+            }
+
             parametry.Add("voucher", voucher);
             string[] responze = new string[] { };
             // send them and receive the token
@@ -603,7 +605,7 @@ namespace hashtopus
                     if (readVoucher()) 
                     {
                         File.Delete(voucherFile);
-                    }     
+                    }
                     return loginAgent();
                 }
                 else
@@ -613,7 +615,7 @@ namespace hashtopus
             }
         }
 
-    public static bool readVoucher()
+        public static bool readVoucher()
         {
             // read voucher from text file
             if (File.Exists(voucherFile))
@@ -1005,104 +1007,107 @@ namespace hashtopus
                 webError(e);
                 return false;
             }
-    if(download) {
-            switch (responze[0])
-            {
-                case "down_ok":
-                    // there is an update available
-                    Console.Write("New Hashcat version available, downloading...");
 
-                    // download installation archive
-                    string szarchive = Path.Combine(installPath, "hashcat.7z");
-                    string url = responze[1];
-                    if (File.Exists(szarchive)) File.Delete(szarchive);
-                    if (!downloadFile(url, szarchive)) return false;
+            if(download) {
+                switch (responze[0])
+                {
+                    case "down_ok":
+                        // there is an update available
+                        Console.Write("New Hashcat version available, downloading...");
 
-                    if (new FileInfo(szarchive).Length == 0)
-                    {
-                        Console.WriteLine("Downloaded empty file.");
+                        // download installation archive
+                        string szarchive = Path.Combine(installPath, "hashcat.7z");
+                        string url = responze[1];
+                        if (File.Exists(szarchive)) File.Delete(szarchive);
+                        if (!downloadFile(url, szarchive)) return false;
+
+                        if (new FileInfo(szarchive).Length == 0)
+                        {
+                            Console.WriteLine("Downloaded empty file.");
+                            File.Delete(szarchive);
+                            return false;
+                        }
+                        string rootdir = Path.Combine(installPath, responze[3]);
+                        cmdExecutable = responze[4];
+                        
+                        // cleanup whatever left from last time (should not be any, but just to be sure)
+                        Console.WriteLine("Clearing directories...");
+                        if (Directory.Exists(rootdir))
+                        {
+                            Console.WriteLine(rootdir);
+                            Directory.Delete(rootdir, true);
+                        }
+                        if (Directory.Exists(hcDir))
+                        {
+                            Console.WriteLine(hcDir);
+                            Directory.Delete(hcDir, true);
+                        }
+                        string extractFiles = responze[2];
+                        List<string> extractFilesParse = new List<string>(extractFiles.Split(' '));
+                        extractFilesParse.Add(cmdExecutable);
+
+                        cmdExecutable = Path.Combine(hcDir, cmdExecutable);
+                        
+                        // find out what to extract where from what
+                        string filesToExtract = "";
+                        foreach (string extractFile in extractFilesParse)
+                        {
+                            filesToExtract += " " + "\"" + Path.Combine(responze[3], extractFile) + "\"";
+                        }
+                        // cut the loading space
+                        filesToExtract = filesToExtract.Substring(1);
+                        // call the extract function
+                        if (!unpack7z(szarchive, installPath, filesToExtract)) break;
+                        // delete the file, its not needed
                         File.Delete(szarchive);
-                        return false;
-                    }
-                    string rootdir = Path.Combine(installPath, responze[3]);
-                    cmdExecutable = responze[4];
-                    
-                    // cleanup whatever left from last time (should not be any, but just to be sure)
-                    Console.WriteLine("Clearing directories...");
-                    if (Directory.Exists(rootdir))
-                    {
-                        Console.WriteLine(rootdir);
-                        Directory.Delete(rootdir, true);
-                    }
-                    if (Directory.Exists(hcDir))
-                    {
-                        Console.WriteLine(hcDir);
-                        Directory.Delete(hcDir, true);
-                    }
-                    string extractFiles = responze[2];
-                    List<string> extractFilesParse = new List<string>(extractFiles.Split(' '));
-                    extractFilesParse.Add(cmdExecutable);
+                        // check if it worked
+                        if (Directory.Exists(rootdir))
+                        {
+                            // rootdir was created correctly - rename it to the static name
+                            Console.WriteLine("Renaming root directory...");
+                            Directory.Move(rootdir, hcDir);
+                        }
+                        else
+                        {
+                            // expected rootdir was not unpacked
+                            Console.WriteLine("Root directory was not unpacked or was incorrectly defined.");
+                            return false;
+                        }
+                        if (Directory.Exists(rootdir) || !Directory.Exists(hcSubdir))
+                        {
+                            Console.WriteLine("Cannot prepare hashcat environment.");
+                            return false;
+                        }
+                        // check if the operation was successful
+                        if (!File.Exists(cmdExecutable))
+                        {
+                            if (Directory.Exists(hcDir)) Directory.Delete(hcDir, true);
+                            Console.WriteLine("Executable for this platform was not delivered.");
+                            return false;
+                        }
+                        else
+                        {
+                            if (os == 1) Process.Start("chmod", "+x \"" + cmdExecutable + "\"");
+                        }
 
-                    cmdExecutable = Path.Combine(hcDir, cmdExecutable);
-                    
-                    // find out what to extract where from what
-                    string filesToExtract = "";
-                    foreach (string extractFile in extractFilesParse)
-                    {
-                        filesToExtract += " " + "\"" + Path.Combine(responze[3], extractFile) + "\"";
-                    }
-                    // cut the loading space
-                    filesToExtract = filesToExtract.Substring(1);
-                    // call the extract function
-                    if (!unpack7z(szarchive, installPath, filesToExtract)) break;
-                    // delete the file, its not needed
-                    File.Delete(szarchive);
-                    // check if it worked
-                    if (Directory.Exists(rootdir))
-                    {
-                        // rootdir was created correctly - rename it to the static name
-                        Console.WriteLine("Renaming root directory...");
-                        Directory.Move(rootdir, hcDir);
-                    }
-                    else
-                    {
-                        // expected rootdir was not unpacked
-                        Console.WriteLine("Root directory was not unpacked or was incorrectly defined.");
-                        return false;
-                    }
-                    if (Directory.Exists(rootdir) || !Directory.Exists(hcSubdir))
-                    {
-                        Console.WriteLine("Cannot prepare hashcat environment.");
-                        return false;
-                    }
-                    // check if the operation was successful
-                    if (!File.Exists(cmdExecutable))
-                    {
-                        if (Directory.Exists(hcDir)) Directory.Delete(hcDir, true);
-                        Console.WriteLine("Executable for this platform was not delivered.");
-                        return false;
-                    }
-                    else
-                    {
-                        if (os == 1) Process.Start("chmod", "+x \"" + cmdExecutable + "\"");
-                    }
+                        break;
 
-                    break;
+                    case "down_nok":
+                        // server-side error
+                        Console.WriteLine("Could not download hashcat: " + responze[1]);
+                        return false;
 
-                case "down_nok":
-                    // server-side error
-                    Console.WriteLine("Could not download hashcat: " + responze[1]);
-                    return false;
-
-                case "down_na":
-                    // update required driver version
-                    if (forceUpdate != "") return false;
-                    cmdExecutable = Path.Combine(hcDir, responze[1]);
-                    break;
+                    case "down_na":
+                        // update required driver version
+                        if (forceUpdate != "") return false;
+                        cmdExecutable = Path.Combine(hcDir, responze[1]);
+                        break;
+                    }
+                } 
+            else 
+            {
+                cmdExecutable = Path.Combine(hcDir, responze[1]);
             }
-} else {
-                    cmdExecutable = Path.Combine(hcDir, responze[1]);
-}
             return true;
         }
 
