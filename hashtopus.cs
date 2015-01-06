@@ -646,7 +646,7 @@ namespace hashtopus
                 return false;
             }
         }
-            
+
         public static bool writeToken()
         {
             // write the token to disk
@@ -1008,7 +1008,7 @@ namespace hashtopus
                 return false;
             }
 
-            if(download) {
+            if (download) {
                 switch (responze[0])
                 {
                     case "down_ok":
