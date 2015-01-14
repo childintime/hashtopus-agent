@@ -420,7 +420,7 @@ namespace hashtopus
                         machineName = vystup;
                     }
                 }
-
+/*
                 // load unique id
                 string mtab = File.ReadAllText("/proc/mounts");
                 mtab = mtab.Replace("\t", " ");
@@ -476,6 +476,7 @@ namespace hashtopus
                         }
                     }
                 }
+*/
                 if (uid == null || uid == "")
                 {
                     // somehow we didn't get a UID, let's just randomly generate one
